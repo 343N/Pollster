@@ -1,3 +1,7 @@
+//modifies prototypes
+require('./prototypes.js');
+
+
 const ESSENTIALS = require('./ESSENTIALS.js')
 const CLIENTS = []
 const POLLS = [];
@@ -37,7 +41,6 @@ if (dbl)
 
 
 
-
 client.on('message', (message) => {
     if (TERMINATING) return;
     if (message.author.id == client.user.id) return;
@@ -45,7 +48,7 @@ client.on('message', (message) => {
         message.channel.send('', { embed: Poll.generateErrorEmbed('Pollster Guide', false) }).then().catch()
     // print(message.content)
 
-    if (message.author.id == "132300806442582017") {
+    if (message.author.id == "132300806442582017" ) {
         if (message.guild.id == '345776249815171103') {
             if (message.content == identifier + "stoppollster") {
                 message.channel.send('TERMINATING')
@@ -68,11 +71,11 @@ client.on('message', (message) => {
             }
             query.splice(0, 1)
             POLLS[POLLS.length] = new Poll.new(message.author, message.channel, question, query)
-
+            
         }
 
         if (cmd === identifier + 'phelp') {
-            message.channel.send('', { embed: Poll.generateErrorEmbed('Pollster Guide', false) })
+            message.channel.send('', { embed: Poll.generateErrorEmbed('Pollster Guide', false)})
         }
         // message.channel.stopTyping()
     }
@@ -80,33 +83,31 @@ client.on('message', (message) => {
 
 setInterval(() => {
     updatePresence()
-    let hrs = Date.now() / 1000 / 60 / 60
     // let counter = 1;
-    for (var i = 0; i < POLLS.length; i++) {
-        let pollHrs = POLLS[i].getTimestamp() / 1000 / 60 / 60
-        // console.log("Poll " + (counter) + " lifetime: " + POLLS[i].getQuestion()
-        //  + ", " + (hrs - pollHrs) + " hours.")
-        if (Poll.MAXLIFETIMEHRS < hrs - pollHrs || !POLLS[i].isActive()) {
-            console.log('Removed poll: ' + POLLS[i].getQuestion())
-            POLLS[i].endPoll()
-            removeAllPollWebClients(POLLS[i].timestamp)
-            POLLS.splice(i, 1)
-            i--;
+    POLLS.filterMe((e) =>{
+        let hrs = Date.now() / 1000 / 60 / 60
+        let pollHrs = e.getTimestamp() / 1000 / 60 / 60
+        if (Poll.MAXLIFETIMEHRS < hrs - pollHrs || e.isActive()) {
+            console.log('Removed poll: ' + e.getQuestion())
+            removeAllPollWebClients(e.getTimestamp())
+            e.endPoll()
+            return true;
         }
-        // counter++;
-    }
+
+        return false;
+    })
 }, PRESENCEINTERVAL * 1000);
 
 
 
-function updatePolls() {
+function updatePolls(){
     if (DISCONNECTED) return;
-    if (UPDATECOUNT % 100 == 0)
+    if (UPDATECOUNT % 100 == 0) 
         print("Updating polls every " + (Math.max(4, POLLS.length) * 0.5) + " seconds.")
 
-    for (var poll of POLLS) {
+    for (var poll of POLLS){
         if (poll.isUpdating())
-            poll.updateMessage()
+        poll.updateMessage()
     }
     UPDATECOUNT++;
     setTimeout(updatePolls, Math.max(4, POLLS.length) * 0.5 * 1000)
@@ -143,11 +144,11 @@ client.on('messageReactionAdd', (mr, user) => {
 client.on('messageReactionRemoveAll', (message) => {
     for (var i = 0; i < POLLS.length; i++) {
         if (POLLS[i].message.id == message.id) {
-            console.log('Removed poll ' + (i + 1) + ': ' + POLLS[i].getQuestion() +
-                " (all reactions removed)")
+            // console.log('Removed poll ' + (i + 1) + ': ' + POLLS[i].getQuestion() + 
+            // " (all reactions removed)")
             POLLS[i].endPoll()
             removeAllPollWebClients(POLLS[i].timestamp)
-            POLLS.splice(i, 1)
+    //         POLLS.splice(i, 1)
         }
     }
 })
@@ -155,8 +156,8 @@ client.on('messageReactionRemoveAll', (message) => {
 client.on('messageDelete', (message) => {
     for (var i = 0; i < POLLS.length; i++) {
         if (POLLS[i].message.id == message.id) {
-            console.log('Removed poll: ' + (i + 1) + ': ' + POLLS[i].getQuestion() +
-                " (message deleted)")
+            console.log('Removed poll: ' + (i + 1) + ': ' + POLLS[i].getQuestion() + 
+            " (message deleted)")
             POLLS.splice(i, 1)
         }
     }
@@ -164,7 +165,7 @@ client.on('messageDelete', (message) => {
 
 client.on('ready', () => {
     DISCONNECTED = false;
-    print("Ready!")
+    print("Ready!")    
     updatePresence()
     updatePolls()
     // client.user.setAvatar('./avatar.png').then(console.log('Avatar uploaded!')).catch(console.error)
@@ -191,7 +192,7 @@ io.sockets.on('connection', (socket) => {
     socket.on('requestData', (data) => {
         console.log(socket.handshake.address + ' has requested data for ' + data)
         let livepoll = getPackagedLivePollData(data)
-
+        
         if (livepoll) {
             CLIENTS.push(new WebClient.new(socket.id, data))
             io.to(socket.id).emit('graphData', livepoll)
@@ -202,25 +203,25 @@ io.sockets.on('connection', (socket) => {
         }
 
         let logPoll = getPackagedLogPollData(data)
-
-        if (logPoll) {
+        
+        if (logPoll){
             io.to(socket.id).emit('graphData', logPoll)
             console.log('sending log poll (' + logPoll.question + ') data to ' + socket.handshake.address)
         } else
             console.log(socket.handshake.address + ', no poll data found')
 
         console.log('disconnecting ' + socket.handshake.address)
-
+        
         socket.disconnect()
 
-
-
-
-
+        
+        
+        
+        
     });
 
     socket.on('disconnect', (data) => {
-        for (var i = 0; i < CLIENTS.length; i++) {
+        for (var i = 0; i < CLIENTS.length; i++){
             if (CLIENTS[i].getId() == socket.id)
                 CLIENTS.splice(i, 1)
             console.log('removed client ' + socket.handshake.address)
@@ -244,12 +245,12 @@ function endBot() {
         console.log('BOT TERMINATED!')
         process.exit()
     }, timeout);
-
+    
 }
 
-function removeAllPollWebClients(pollId) {
-    for (var i = 0; i < CLIENTS.length; i++) {
-        if (CLIENTS[i].getPollId() == pollId) {
+function removeAllPollWebClients(pollId){
+    for (var i=0; i < CLIENTS.length; i++){
+        if (CLIENTS[i].getPollId() == pollId){
             var socket = io.sockets.connected[CLIENTS[i].getId()]
             if (socket) {
                 socket.disconnect()
@@ -261,32 +262,32 @@ function removeAllPollWebClients(pollId) {
     }
 }
 
-function updatePresence() {
+function updatePresence(){
     SERVERCOUNT = client.guilds.size
     if (DISCONNECTED) return;
     let votes = getTotalVoteCount()
     let active = getTotalActivePollCount()
 
-    let activestr = (active == 1) ? active + ' poll (for ' : active + ' polls (for '
+    let activestr = (active == 1) ? active + ' poll (for ' : active +  ' polls (for '
     let votestr = (votes == 1) ? votes + ' vote) across ' : votes + ' votes) across '
     let serverstr = (SERVERCOUNT == 1) ? SERVERCOUNT + ' server.' : SERVERCOUNT + ' servers.'
     // console.log((new Date()).toLocaleDateString() + ' ' +(new Date()).toLocaleTimeString() + '\nServers: ' + SERVERCOUNT + ' - Polls: ' + active + ' - Votes: ' + votes)
-
-    client.user.setPresence({ game: { name: identifier + 'phelp. Monitoring ' + activestr + votestr + serverstr, type: 2 } }).then().catch(console.error)
+    
+    client.user.setPresence({ game: { name: identifier +'phelp. Monitoring ' + activestr + votestr + serverstr, type: 2 } }).then().catch(console.error)
 }
 
-function getTotalVoteCount() {
+function getTotalVoteCount(){
     var count = 0;
-    for (var poll of POLLS) {
+    for (var poll of POLLS){
         if (poll.isActive())
             count += poll.getTotalVotes()
     }
     return count;
 }
 
-function getTotalActivePollCount() {
+function getTotalActivePollCount(){
     var count = 0;
-    for (var poll of POLLS) {
+    for (var poll of POLLS){
         if (poll.isActive()) count += 1;
     }
     return count;
@@ -297,12 +298,12 @@ function print(s) {
 }
 
 
-function findLogPoll(id) {
+function findLogPoll(id){
     var accessible = true;
 
     try {
         fs.accessSync(path.join(__dirname, 'log', (id + '_bot.txt')), fs.constants.F_OK | fs.constants.R_OK)
-    } catch (err) {
+    } catch (err){
         accessible = false;
     }
 
@@ -310,10 +311,10 @@ function findLogPoll(id) {
     return accessible;
 }
 
-function packageLogPollData(id) {
+function packageLogPollData(id){
     var log;
     log = fs.readFileSync(path.join(__dirname, 'log', (id + '_bot.txt')),
-        { encoding: `utf8` }
+        {encoding: `utf8`}
     )
     if (!log) return null;
     console.log('unpackaged poll data: ' + log)
@@ -326,31 +327,31 @@ function packageLogPollData(id) {
 
     parsed.question = data[0];
 
-    for (var i = 1; i < data.length; i += 3) {
-        parsed.labels.push(data[i + 1] + " - " + data[i])
-        parsed.counts.push(data[i + 2]);
+    for (var i = 1; i < data.length; i+=3){
+        parsed.labels.push(data[i+1] + " - " + data[i])
+        parsed.counts.push(data[i+2]);
     }
 
     return parsed;
 }
 
-function getPackagedLogPollData(id) {
+function getPackagedLogPollData(id){
     if (!findLogPoll(id)) return null
     return packageLogPollData(id)
 }
 
-function packageLivePollData(poll) {
+function packageLivePollData(poll){
     if (!poll) return null;
 
     var emojiIndex = poll.getEmojiIndex()
     var keys = Object.keys(emojiIndex)
     var data = {}
-
+    
     data.labels = [];
     data.counts = [];
     data.question = poll.getQuestion();
-
-    for (var key of keys) {
+    
+    for (var key of keys){
         data.labels.push(emojiIndex[key].answer + ' - ' + key)
         data.counts.push(emojiIndex[key].count)
     }
@@ -358,7 +359,7 @@ function packageLivePollData(poll) {
     return data;
 }
 
-function findLivePoll(id) {
+function findLivePoll(id){
     for (var poll of POLLS)
         if (id == poll.timestamp) return poll
 
@@ -366,6 +367,6 @@ function findLivePoll(id) {
 }
 
 
-function getPackagedLivePollData(id) {
+function getPackagedLivePollData(id){
     return packageLivePollData(findLivePoll(id))
 }
