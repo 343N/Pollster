@@ -1,0 +1,20 @@
+{
+  "name": "pollster",
+  "version": "1.0.0",
+  "description": "Makes polls on discord",
+  "main": "bot",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "poll",
+    "bot",
+    "discord",
+    "pollster"
+  ],
+  "author": "343N",
+  "license": "ISC"
+}
